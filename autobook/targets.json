@@ -1,0 +1,20 @@
+[
+  {
+    "name": "Cycling High Intensity",
+    "day": "mardi",
+    "time": "18:30",
+    "enabled": false,
+    "_comment": "Exemple — mets enabled à true et adapte. 'name' = correspondance partielle, insensible aux accents et à la casse."
+  },
+  {
+    "name": "Pilates Reformer",
+    "day": "jeudi",
+    "time": "20:00",
+    "enabled": false
+  },
+  {
+    "name": "Cross Training",
+    "enabled": false,
+    "_comment": "Sans 'day' ni 'time' : tous les cours de ce nom sur la période balayée. 'teacher' est aussi accepté."
+  }
+]

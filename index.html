@@ -1,0 +1,735 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#0f1115">
+<title>Stadium — Cours collectifs</title>
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="apple-touch-icon" href="icons/icon-192.png">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<style>
+  :root{
+    --bg:#f6f7f9; --surface:#ffffff; --surface-2:#eef0f4; --text:#12151a; --muted:#646c7a;
+    --line:#e2e5ea; --accent:#e2001a; --accent-ink:#ffffff; --ok:#12805c; --warn:#a35b00; --danger:#c8102e;
+    --radius:14px; --shadow:0 1px 2px rgba(16,20,28,.06),0 6px 20px rgba(16,20,28,.06);
+  }
+  :root[data-theme="dark"], :root:not([data-theme="light"]) {
+    color-scheme: light dark;
+  }
+  @media (prefers-color-scheme: dark){
+    :root:not([data-theme="light"]){
+      --bg:#0f1115; --surface:#171a21; --surface-2:#1f232c; --text:#eef1f6; --muted:#98a1b0;
+      --line:#272c36; --accent:#ff2d42; --accent-ink:#ffffff; --ok:#3ddc9a; --warn:#ffb454; --danger:#ff5a6e;
+      --shadow:0 1px 2px rgba(0,0,0,.4),0 8px 24px rgba(0,0,0,.35);
+    }
+  }
+  :root[data-theme="dark"]{
+    --bg:#0f1115; --surface:#171a21; --surface-2:#1f232c; --text:#eef1f6; --muted:#98a1b0;
+    --line:#272c36; --accent:#ff2d42; --accent-ink:#ffffff; --ok:#3ddc9a; --warn:#ffb454; --danger:#ff5a6e;
+    --shadow:0 1px 2px rgba(0,0,0,.4),0 8px 24px rgba(0,0,0,.35);
+  }
+  *{box-sizing:border-box}
+  html,body{margin:0;padding:0}
+  body{
+    background:var(--bg); color:var(--text);
+    font:16px/1.45 -apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;
+    -webkit-font-smoothing:antialiased; overscroll-behavior-y:contain;
+  }
+  button,input,select{font:inherit;color:inherit}
+  button{cursor:pointer}
+  .app{max-width:640px;margin:0 auto;min-height:100vh;display:flex;flex-direction:column}
+
+  /* ---------- header ---------- */
+  header{
+    position:sticky;top:0;z-index:20;background:var(--surface);
+    border-bottom:1px solid var(--line);
+    padding:calc(env(safe-area-inset-top) + 10px) 12px 0;
+  }
+  .bar{display:flex;align-items:center;gap:8px;padding-bottom:10px}
+  .brand{display:flex;align-items:center;gap:8px;font-weight:800;letter-spacing:-.02em;font-size:17px}
+  .dot{width:10px;height:10px;border-radius:50%;background:var(--accent)}
+  .spacer{flex:1}
+  .iconbtn{
+    background:var(--surface-2);border:1px solid var(--line);border-radius:10px;
+    width:38px;height:38px;display:grid;place-items:center;padding:0;
+  }
+  .iconbtn:active{transform:scale(.96)}
+  select.club{
+    background:var(--surface-2);border:1px solid var(--line);border-radius:10px;
+    padding:8px 10px;max-width:180px;font-size:14px;font-weight:600;
+  }
+
+  /* ---------- day strip ---------- */
+  .days{display:flex;gap:8px;overflow-x:auto;padding:2px 0 10px;scrollbar-width:none}
+  .days::-webkit-scrollbar{display:none}
+  .day{
+    flex:0 0 auto;min-width:62px;padding:8px 10px;border-radius:12px;text-align:center;
+    background:var(--surface-2);border:1px solid var(--line);line-height:1.15;
+  }
+  .day small{display:block;font-size:11px;color:var(--muted);text-transform:capitalize}
+  .day b{display:block;font-size:17px;margin-top:2px}
+  .day[aria-selected="true"]{background:var(--accent);border-color:var(--accent);color:var(--accent-ink)}
+  .day[aria-selected="true"] small{color:rgba(255,255,255,.85)}
+
+  /* ---------- filters ---------- */
+  .filters{display:flex;gap:8px;padding:0 0 10px;overflow-x:auto;scrollbar-width:none;align-items:center}
+  .filters::-webkit-scrollbar{display:none}
+  .chip{
+    flex:0 0 auto;background:var(--surface-2);border:1px solid var(--line);border-radius:999px;
+    padding:7px 12px;font-size:13px;font-weight:600;color:var(--muted)
+  }
+  .chip[aria-pressed="true"]{background:var(--accent);border-color:var(--accent);color:var(--accent-ink)}
+  .search{
+    flex:1 1 130px;min-width:120px;background:var(--surface-2);border:1px solid var(--line);
+    border-radius:999px;padding:8px 12px;font-size:14px;outline:none
+  }
+
+  /* ---------- content ---------- */
+  main{flex:1;padding:12px 12px calc(env(safe-area-inset-bottom) + 88px)}
+  .list{display:flex;flex-direction:column;gap:10px}
+  .card{
+    background:var(--surface);border:1px solid var(--line);border-radius:var(--radius);
+    box-shadow:var(--shadow);padding:12px;display:flex;gap:12px;align-items:flex-start
+  }
+  .time{flex:0 0 58px;text-align:center}
+  .time b{display:block;font-size:17px;letter-spacing:-.02em}
+  .time small{display:block;font-size:12px;color:var(--muted)}
+  .body{flex:1;min-width:0}
+  .title{font-weight:700;font-size:15px;letter-spacing:-.01em;display:flex;align-items:center;gap:6px}
+  .title .star{background:none;border:0;padding:0;font-size:15px;line-height:1;opacity:.35}
+  .title .star[aria-pressed="true"]{opacity:1}
+  .meta{color:var(--muted);font-size:13px;margin-top:2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .badges{display:flex;flex-wrap:wrap;gap:6px;margin-top:8px}
+  .badge{font-size:11.5px;font-weight:700;padding:3px 8px;border-radius:999px;background:var(--surface-2);color:var(--muted)}
+  .badge.ok{background:color-mix(in srgb,var(--ok) 16%,transparent);color:var(--ok)}
+  .badge.warn{background:color-mix(in srgb,var(--warn) 18%,transparent);color:var(--warn)}
+  .badge.full{background:color-mix(in srgb,var(--danger) 14%,transparent);color:var(--danger)}
+  .act{flex:0 0 auto;align-self:center}
+  .btn{
+    border:1px solid var(--line);background:var(--surface-2);border-radius:10px;
+    padding:9px 12px;font-size:13px;font-weight:700;white-space:nowrap
+  }
+  .btn.primary{background:var(--accent);border-color:var(--accent);color:var(--accent-ink)}
+  .btn.danger{background:transparent;border-color:var(--danger);color:var(--danger)}
+  .btn[disabled]{opacity:.5;cursor:default}
+  .btn.block{width:100%;padding:13px;font-size:15px;border-radius:12px}
+  .booked{outline:2px solid color-mix(in srgb,var(--ok) 55%,transparent);outline-offset:-1px}
+
+  .empty{text-align:center;color:var(--muted);padding:48px 16px;font-size:14px}
+  .sk{height:76px;border-radius:var(--radius);background:linear-gradient(90deg,var(--surface) 25%,var(--surface-2) 37%,var(--surface) 63%);background-size:400% 100%;animation:sh 1.2s ease infinite}
+  @keyframes sh{0%{background-position:100% 0}100%{background-position:0 0}}
+
+  /* ---------- tabbar ---------- */
+  nav.tabs{
+    position:fixed;left:0;right:0;bottom:0;z-index:30;background:var(--surface);
+    border-top:1px solid var(--line);display:flex;
+    padding:6px 0 calc(env(safe-area-inset-bottom) + 6px);
+  }
+  nav.tabs > *{max-width:640px}
+  .tabs-inner{max-width:640px;margin:0 auto;width:100%;display:flex}
+  .tab{flex:1;background:none;border:0;padding:6px 4px;font-size:11px;font-weight:700;color:var(--muted);display:grid;gap:3px;justify-items:center}
+  .tab svg{width:22px;height:22px}
+  .tab[aria-selected="true"]{color:var(--accent)}
+
+  /* ---------- login ---------- */
+  .auth{padding:24px 16px;max-width:420px;margin:0 auto;width:100%}
+  .auth h1{font-size:22px;letter-spacing:-.02em;margin:8px 0 4px}
+  .auth p.sub{color:var(--muted);font-size:14px;margin:0 0 20px}
+  .field{margin-bottom:12px}
+  .field label{display:block;font-size:12.5px;font-weight:700;color:var(--muted);margin-bottom:5px}
+  .field input,.field select{
+    width:100%;background:var(--surface);border:1px solid var(--line);border-radius:12px;padding:13px 12px;outline:none
+  }
+  .field input:focus{border-color:var(--accent)}
+  .note{font-size:12.5px;color:var(--muted);margin-top:14px;line-height:1.5}
+  .msg{border-radius:12px;padding:11px 12px;font-size:13.5px;margin-bottom:12px;display:none}
+  .msg.err{display:block;background:color-mix(in srgb,var(--danger) 12%,transparent);color:var(--danger)}
+  .msg.ok{display:block;background:color-mix(in srgb,var(--ok) 14%,transparent);color:var(--ok)}
+
+  /* ---------- toast ---------- */
+  #toast{
+    position:fixed;left:50%;transform:translateX(-50%) translateY(20px);
+    bottom:calc(env(safe-area-inset-bottom) + 78px);z-index:50;max-width:min(560px,92vw);
+    background:#12151a;color:#fff;border-radius:12px;padding:12px 14px;font-size:13.5px;
+    box-shadow:0 10px 30px rgba(0,0,0,.35);opacity:0;pointer-events:none;transition:.22s
+  }
+  #toast.show{opacity:1;transform:translateX(-50%) translateY(0)}
+  #toast.err{background:var(--danger)}
+  #toast.ok{background:#0e6f4f}
+  .hide{display:none !important}
+</style>
+</head>
+<body>
+<div class="app">
+  <!-- ============ LOGIN ============ -->
+  <section id="view-auth" class="auth hide">
+    <div class="brand" style="margin-bottom:18px"><span class="dot"></span> Stadium</div>
+    <h1>Connexion</h1>
+    <p class="sub">Vos identifiants Stadium habituels. Ils ne transitent que vers l'API Stadium, rien n'est envoyé ailleurs.</p>
+    <div id="auth-msg" class="msg"></div>
+
+    <div id="step-login">
+      <div class="field">
+        <label for="i-club">Club</label>
+        <select id="i-club"></select>
+      </div>
+      <div class="field">
+        <label for="i-user">E-mail ou numéro de membre</label>
+        <input id="i-user" type="text" autocomplete="username" inputmode="email" autocapitalize="none" spellcheck="false">
+      </div>
+      <div class="field">
+        <label for="i-pass">Mot de passe</label>
+        <input id="i-pass" type="password" autocomplete="current-password">
+      </div>
+      <button id="btn-login" class="btn primary block">Se connecter</button>
+    </div>
+
+    <div id="step-2fa" class="hide">
+      <div class="field">
+        <label for="i-code">Code de vérification <span id="masked"></span></label>
+        <input id="i-code" type="text" inputmode="numeric" autocomplete="one-time-code" maxlength="8">
+      </div>
+      <button id="btn-2fa" class="btn primary block">Valider</button>
+      <button id="btn-2fa-back" class="btn block" style="margin-top:8px">Retour</button>
+    </div>
+
+    <p class="note">
+      Le mot de passe est haché (SHA-256) dans le navigateur avant l'envoi, exactement comme sur le site officiel.
+      Seul le jeton de session est conservé sur ce téléphone — jamais le mot de passe.
+    </p>
+  </section>
+
+  <!-- ============ APP ============ -->
+  <div id="view-app" class="hide" style="display:flex;flex-direction:column;flex:1">
+    <header>
+      <div class="bar">
+        <div class="brand"><span class="dot"></span> Stadium</div>
+        <div class="spacer"></div>
+        <select id="club" class="club" aria-label="Club"></select>
+        <button id="btn-theme" class="iconbtn" title="Thème" aria-label="Changer de thème">
+          <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M21 12.8A9 9 0 1 1 11.2 3a7 7 0 0 0 9.8 9.8z"/></svg>
+        </button>
+        <button id="btn-logout" class="iconbtn" title="Déconnexion" aria-label="Déconnexion">
+          <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><path d="m16 17 5-5-5-5"/><path d="M21 12H9"/></svg>
+        </button>
+      </div>
+      <div id="days" class="days"></div>
+      <div id="filters" class="filters">
+        <input id="q" class="search" type="search" placeholder="Rechercher un cours…" autocapitalize="none">
+        <button id="f-fav" class="chip" aria-pressed="false">★ Favoris</button>
+        <button id="f-free" class="chip" aria-pressed="false">Places dispo</button>
+      </div>
+    </header>
+
+    <main>
+      <div id="list" class="list"></div>
+    </main>
+
+    <nav class="tabs">
+      <div class="tabs-inner">
+        <button class="tab" data-tab="schedule" aria-selected="true">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><rect x="3" y="4" width="18" height="18" rx="2"/><path d="M16 2v4M8 2v4M3 10h18"/></svg>
+          Horaire
+        </button>
+        <button class="tab" data-tab="mine" aria-selected="false">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg>
+          Mes réservations
+        </button>
+      </div>
+    </nav>
+  </div>
+</div>
+<div id="toast"></div>
+
+<script>
+(() => {
+"use strict";
+
+/* ============================================================
+   Configuration
+   ============================================================ */
+const CLUBS = [
+  { id: 1, name: "Stadium One",      api: "https://webapi.stadium.be/api/1" },
+  { id: 4, name: "Stadium Coupure",  api: "https://webapi.stadium.be/api/4" },
+  { id: 5, name: "Stadium Kinetix",  api: "https://webapi.stadium.be/api/5" },
+  { id: 6, name: "Stadium Caméléon", api: "https://webapi.stadium.be/api/6" },
+];
+const DAYS_AHEAD = 14;
+const LS = {
+  club:  "stadium.club",
+  theme: "stadium.theme",
+  fav:   "stadium.favorites",
+  token: (c) => `stadium.token.${c}`,
+  user:  (c) => `stadium.user.${c}`,
+};
+
+/* ============================================================
+   State + helpers
+   ============================================================ */
+const state = {
+  club: +(localStorage.getItem(LS.club) || 1),
+  date: startOfDay(new Date()),
+  tab: "schedule",
+  classes: [],
+  mine: [],
+  loading: false,
+  filters: { q: "", fav: false, free: false },
+  favorites: new Set(JSON.parse(localStorage.getItem(LS.fav) || "[]")),
+};
+
+const $ = (s, r = document) => r.querySelector(s);
+const $$ = (s, r = document) => [...r.querySelectorAll(s)];
+const club = () => CLUBS.find(c => c.id === state.club) || CLUBS[0];
+const token = () => localStorage.getItem(LS.token(state.club));
+const setToken = (t) => t ? localStorage.setItem(LS.token(state.club), t)
+                          : localStorage.removeItem(LS.token(state.club));
+
+function startOfDay(d){ const x = new Date(d); x.setHours(0,0,0,0); return x; }
+function addDays(d, n){ const x = new Date(d); x.setDate(x.getDate() + n); return x; }
+function fmtApi(d){
+  const p = (n) => String(n).padStart(2, "0");
+  return `${p(d.getDate())}/${p(d.getMonth()+1)}/${d.getFullYear()}`;
+}
+function sameDay(a, b){ return startOfDay(a).getTime() === startOfDay(b).getTime(); }
+function parseApiDate(s){
+  const m = /^(\d{2})\/(\d{2})\/(\d{4})$/.exec(String(s || ""));
+  return m ? new Date(+m[3], +m[2] - 1, +m[1]) : null;
+}
+function escapeHtml(s){
+  return String(s ?? "").replace(/[&<>"']/g, c => ({ "&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;" }[c]));
+}
+async function sha256Hex(text){
+  const buf = await crypto.subtle.digest("SHA-256", new TextEncoder().encode(text));
+  return [...new Uint8Array(buf)].map(b => b.toString(16).padStart(2, "0")).join("");
+}
+let toastTimer;
+function toast(message, kind = ""){
+  const el = $("#toast");
+  el.textContent = message;
+  el.className = "show " + kind;
+  clearTimeout(toastTimer);
+  toastTimer = setTimeout(() => { el.className = kind; }, 3800);
+}
+
+/* ============================================================
+   API — same endpoints the official site uses
+   ============================================================ */
+class AuthError extends Error {}
+
+async function api(path, { method = "GET", json, form } = {}){
+  const headers = {};
+  const t = token();
+  if (t) headers.authorization = t;
+  if (json) headers["Content-Type"] = "application/json";
+
+  let res;
+  try {
+    res = await fetch(club().api + path, {
+      method,
+      cache: "no-cache",
+      headers,
+      body: form ? form : (json ? JSON.stringify(json) : undefined),
+    });
+  } catch (e) {
+    throw new Error("Pas de connexion au serveur Stadium.");
+  }
+  if (res.status === 401 || res.status === 403) throw new AuthError("Session expirée.");
+  const text = await res.text();
+  if (!res.ok) throw new Error(`Erreur serveur (${res.status}).`);
+  try { return text ? JSON.parse(text) : null; }
+  catch { throw new Error("Réponse inattendue du serveur."); }
+}
+
+const API = {
+  schedule: (date) => api(`/api/Lessenrooster/geplande_lessen?datum=${fmtApi(date)}&LesId=`),
+  bookings: () => api("/api/Portal/Booking"),
+  member:   () => api("/api/Portal/Memberdata"),
+  book:     (lesUurId) => api("/api/Portal/Booking_Lesuur", { method: "POST", json: { LesUurId: lesUurId, ComputerId: null } }),
+  cancel:   (reservatieId) => api("/api/Portal/Annulation", { method: "POST", json: { ReservatieId: reservatieId } }),
+  login:    (form) => api("/api/Portal/Login", { method: "POST", form }),
+  verify2fa:(challengeId, code) => api("/api/Portal/Verify2FA", { method: "POST", json: { challengeId, code } }),
+};
+
+/* ============================================================
+   Views
+   ============================================================ */
+function showAuth(){
+  $("#view-auth").classList.remove("hide");
+  $("#view-app").classList.add("hide");
+  $("#step-2fa").classList.add("hide");
+  $("#step-login").classList.remove("hide");
+  const sel = $("#i-club");
+  sel.value = String(state.club);
+  const saved = localStorage.getItem(LS.user(state.club));
+  if (saved) $("#i-user").value = saved;
+}
+function showApp(){
+  $("#view-auth").classList.add("hide");
+  $("#view-app").classList.remove("hide");
+  renderDays();
+  refresh();
+}
+function authMsg(text, kind = "err"){
+  const el = $("#auth-msg");
+  el.textContent = text || "";
+  el.className = "msg" + (text ? " " + kind : "");
+}
+
+/* ---------- day strip ---------- */
+function renderDays(){
+  const wrap = $("#days");
+  const today = startOfDay(new Date());
+  wrap.innerHTML = "";
+  for (let i = 0; i < DAYS_AHEAD; i++){
+    const d = addDays(today, i);
+    const b = document.createElement("button");
+    b.className = "day";
+    b.setAttribute("aria-selected", sameDay(d, state.date) ? "true" : "false");
+    const label = i === 0 ? "Auj." : i === 1 ? "Demain"
+      : d.toLocaleDateString("fr-BE", { weekday: "short" }).replace(".", "");
+    b.innerHTML = `<small>${escapeHtml(label)}</small><b>${d.getDate()}</b>`;
+    b.onclick = () => {
+      state.date = d;
+      renderDays();
+      $("#days").scrollLeft = Math.max(0, b.offsetLeft - 90);
+      loadSchedule();
+    };
+    wrap.appendChild(b);
+  }
+}
+
+/* ---------- class list ---------- */
+function categoryOf(c){
+  const tags = [];
+  if (c.LadiesOnly) tags.push("Ladies only");
+  if (c.Outdoor) tags.push("Outdoor");
+  if (c.Dertig) tags.push("30 min");
+  return tags;
+}
+
+function classCard(c, { showDate = false } = {}){
+  const name = c.LesNaam || "Cours";
+  const booked = !!c.ReservatieId;
+  const remaining = Number.isFinite(c.Remaining) ? c.Remaining : -1;
+  const full = remaining === 0 && !booked;
+  const fav = state.favorites.has(name.toLowerCase());
+  const d = parseApiDate(c.Datum);
+
+  const badges = [];
+  if (booked) badges.push(`<span class="badge ok">Réservé</span>`);
+  else if (full) badges.push(`<span class="badge full">Complet</span>`);
+  else if (remaining > 0 && remaining <= 3) badges.push(`<span class="badge warn">${remaining} place${remaining > 1 ? "s" : ""}</span>`);
+  else if (remaining > 0) badges.push(`<span class="badge">${remaining} places</span>`);
+  if (c.Niveau) badges.push(`<span class="badge">${escapeHtml(c.Niveau)}</span>`);
+  for (const t of categoryOf(c)) badges.push(`<span class="badge">${escapeHtml(t)}</span>`);
+
+  let action;
+  if (booked) action = `<button class="btn danger" data-cancel="${escapeHtml(c.ReservatieId)}">Annuler</button>`;
+  else if (full) action = `<button class="btn" disabled>Complet</button>`;
+  else action = `<button class="btn primary" data-book="${escapeHtml(c.Id)}">Réserver</button>`;
+
+  const meta = [c.leerkrachtnaam, c.Zaal].filter(Boolean).join(" · ");
+  const dateLine = showDate && d
+    ? `<div class="meta">${escapeHtml(d.toLocaleDateString("fr-BE", { weekday: "long", day: "numeric", month: "long" }))}</div>`
+    : "";
+
+  const el = document.createElement("article");
+  el.className = "card" + (booked ? " booked" : "");
+  el.innerHTML = `
+    <div class="time"><b>${escapeHtml(c.Beginuur || "")}</b><small>${escapeHtml(c.Einduur || "")}</small></div>
+    <div class="body">
+      <div class="title">
+        <button class="star" aria-pressed="${fav}" data-fav="${escapeHtml(name)}" title="Favori">★</button>
+        <span>${escapeHtml(name)}</span>
+      </div>
+      ${dateLine}
+      ${meta ? `<div class="meta">${escapeHtml(meta)}</div>` : ""}
+      <div class="badges">${badges.join("")}</div>
+    </div>
+    <div class="act">${action}</div>`;
+  return el;
+}
+
+function filtered(list){
+  const q = state.filters.q.trim().toLowerCase();
+  return list.filter(c => {
+    const name = (c.LesNaam || "").toLowerCase();
+    if (q && !(name.includes(q) || (c.leerkrachtnaam || "").toLowerCase().includes(q))) return false;
+    if (state.filters.fav && !state.favorites.has(name)) return false;
+    if (state.filters.free && !(c.Remaining === -1 || c.Remaining > 0 || c.ReservatieId)) return false;
+    return true;
+  });
+}
+
+function render(){
+  const list = $("#list");
+  $("#filters").classList.toggle("hide", state.tab !== "schedule");
+  $("#days").classList.toggle("hide", state.tab !== "schedule");
+
+  if (state.loading){
+    list.innerHTML = Array.from({ length: 5 }, () => `<div class="sk"></div>`).join("");
+    return;
+  }
+  list.innerHTML = "";
+
+  if (state.tab === "mine"){
+    if (!state.mine.length){
+      list.innerHTML = `<div class="empty">Aucune réservation à venir.</div>`;
+      return;
+    }
+    for (const c of state.mine) list.appendChild(classCard(c, { showDate: true }));
+    return;
+  }
+
+  const items = filtered(state.classes);
+  if (!items.length){
+    list.innerHTML = `<div class="empty">${state.classes.length ? "Aucun cours ne correspond au filtre." : "Pas de cours ce jour-là."}</div>`;
+    return;
+  }
+  for (const c of items) list.appendChild(classCard(c));
+}
+
+/* ============================================================
+   Data loading
+   ============================================================ */
+async function guarded(fn){
+  try { return await fn(); }
+  catch (e){
+    if (e instanceof AuthError){ setToken(null); showAuth(); authMsg("Session expirée, reconnectez-vous."); return null; }
+    toast(e.message || "Erreur", "err");
+    return null;
+  }
+}
+
+async function loadSchedule(){
+  state.loading = true; render();
+  const data = await guarded(() => API.schedule(state.date));
+  state.loading = false;
+  state.classes = Array.isArray(data) ? data : [];
+  render();
+}
+
+async function loadMine(){
+  state.loading = true; render();
+  const data = await guarded(() => API.bookings());
+  state.loading = false;
+  const rows = Array.isArray(data) ? data.filter(r => r.Type === 0) : [];
+  state.mine = rows
+    .map(r => ({ ...(r.LesUur || {}), ...r }))
+    .filter(r => {
+      const d = parseApiDate(r.Datum);
+      return !d || d >= startOfDay(new Date());
+    })
+    .sort((a, b) => {
+      const da = parseApiDate(a.Datum), db = parseApiDate(b.Datum);
+      if (da && db && da - db) return da - db;
+      return String(a.Beginuur).localeCompare(String(b.Beginuur));
+    });
+  render();
+}
+
+function refresh(){ return state.tab === "mine" ? loadMine() : loadSchedule(); }
+
+/* ============================================================
+   Actions
+   ============================================================ */
+async function doBook(lesUurId, btn){
+  btn.disabled = true; btn.textContent = "…";
+  const res = await guarded(() => API.book(+lesUurId));
+  if (res && res.Type === 4){
+    // Type 4 = confirmation requise : le site officiel renvoie la même requête.
+    const again = await guarded(() => API.book(+lesUurId));
+    if (again && again.Msg) toast(again.Msg, "ok");
+  } else if (res && res.Msg){
+    toast(res.Msg, res.Type === 0 ? "ok" : "");
+  } else if (res){
+    toast("Réservation envoyée.", "ok");
+  }
+  await refresh();
+}
+
+async function doCancel(reservatieId, btn){
+  if (!confirm("Annuler cette réservation ?")) return;
+  btn.disabled = true; btn.textContent = "…";
+  const res = await guarded(() => API.cancel(reservatieId));
+  if (res && res.Msg) toast(res.Msg, "ok");
+  else if (res) toast("Réservation annulée.", "ok");
+  await refresh();
+}
+
+function toggleFav(name){
+  const key = name.toLowerCase();
+  state.favorites.has(key) ? state.favorites.delete(key) : state.favorites.add(key);
+  localStorage.setItem(LS.fav, JSON.stringify([...state.favorites]));
+  render();
+}
+
+/* ============================================================
+   Login flow
+   ============================================================ */
+async function submitLogin(){
+  const user = $("#i-user").value.trim();
+  const pass = $("#i-pass").value;
+  if (!user || !pass){ authMsg("Identifiant et mot de passe requis."); return; }
+  const btn = $("#btn-login");
+  btn.disabled = true; btn.textContent = "Connexion…";
+  authMsg("");
+  try {
+    const fd = new FormData();
+    fd.append("identificatie", user);
+    fd.append("password", await sha256Hex(pass));
+    const res = await API.login(fd);
+
+    if (res && res.RetryAfterSeconds > 0){
+      authMsg(`Trop de tentatives. Réessayez dans ${Math.ceil(res.RetryAfterSeconds / 60)} min.`);
+    } else if (res && res.Requires2FA){
+      sessionStorage.setItem("stadium.challenge", res.ChallengeId);
+      $("#masked").textContent = res.MaskedMobile ? `(${res.MaskedMobile})` : "";
+      $("#step-login").classList.add("hide");
+      $("#step-2fa").classList.remove("hide");
+      $("#i-code").focus();
+    } else if (res && res.Token){
+      setToken(res.Token);
+      localStorage.setItem(LS.user(state.club), user);
+      $("#i-pass").value = "";
+      showApp();
+    } else {
+      authMsg((res && (res.Msg || res.msg)) || "Identifiant ou mot de passe incorrect.");
+    }
+  } catch (e){
+    authMsg(e.message || "Connexion impossible.");
+  } finally {
+    btn.disabled = false; btn.textContent = "Se connecter";
+  }
+}
+
+async function submit2fa(){
+  const code = $("#i-code").value.trim();
+  const challenge = sessionStorage.getItem("stadium.challenge");
+  if (!code) return;
+  if (!challenge){ authMsg("Session de vérification expirée, reconnectez-vous."); backToLogin(); return; }
+  const btn = $("#btn-2fa");
+  btn.disabled = true; btn.textContent = "Vérification…";
+  try {
+    const res = await API.verify2fa(challenge, code);
+    if (res && res.Token){
+      setToken(res.Token);
+      localStorage.setItem(LS.user(state.club), $("#i-user").value.trim());
+      sessionStorage.removeItem("stadium.challenge");
+      $("#i-pass").value = ""; $("#i-code").value = "";
+      showApp();
+    } else {
+      authMsg((res && (res.Msg || res.msg)) || "Code incorrect.");
+    }
+  } catch (e){
+    authMsg(e.message || "Vérification impossible.");
+  } finally {
+    btn.disabled = false; btn.textContent = "Valider";
+  }
+}
+
+function backToLogin(){
+  $("#step-2fa").classList.add("hide");
+  $("#step-login").classList.remove("hide");
+  authMsg("");
+}
+
+/* ============================================================
+   Wiring
+   ============================================================ */
+function applyTheme(){
+  const t = localStorage.getItem(LS.theme);
+  if (t) document.documentElement.setAttribute("data-theme", t);
+  else document.documentElement.removeAttribute("data-theme");
+}
+
+function fillClubSelects(){
+  for (const sel of [$("#club"), $("#i-club")]){
+    sel.innerHTML = CLUBS.map(c => `<option value="${c.id}">${escapeHtml(c.name)}</option>`).join("");
+    sel.value = String(state.club);
+  }
+}
+
+function switchClub(id){
+  state.club = +id;
+  localStorage.setItem(LS.club, String(state.club));
+  fillClubSelects();
+  if (token()) showApp(); else showAuth();
+}
+
+function init(){
+  applyTheme();
+  fillClubSelects();
+
+  $("#club").onchange = (e) => switchClub(e.target.value);
+  $("#i-club").onchange = (e) => switchClub(e.target.value);
+
+  $("#btn-login").onclick = submitLogin;
+  $("#i-pass").addEventListener("keydown", e => { if (e.key === "Enter") submitLogin(); });
+  $("#btn-2fa").onclick = submit2fa;
+  $("#i-code").addEventListener("keydown", e => { if (e.key === "Enter") submit2fa(); });
+  $("#btn-2fa-back").onclick = backToLogin;
+
+  $("#btn-logout").onclick = () => {
+    if (!confirm("Se déconnecter ?")) return;
+    setToken(null);
+    showAuth();
+  };
+  $("#btn-theme").onclick = () => {
+    const cur = document.documentElement.getAttribute("data-theme");
+    const isDark = cur ? cur === "dark" : matchMedia("(prefers-color-scheme: dark)").matches;
+    const next = isDark ? "light" : "dark";
+    localStorage.setItem(LS.theme, next);
+    applyTheme();
+  };
+
+  $("#q").addEventListener("input", e => { state.filters.q = e.target.value; render(); });
+  $("#f-fav").onclick = (e) => {
+    state.filters.fav = !state.filters.fav;
+    e.currentTarget.setAttribute("aria-pressed", String(state.filters.fav));
+    render();
+  };
+  $("#f-free").onclick = (e) => {
+    state.filters.free = !state.filters.free;
+    e.currentTarget.setAttribute("aria-pressed", String(state.filters.free));
+    render();
+  };
+
+  $$(".tab").forEach(tab => {
+    tab.onclick = () => {
+      state.tab = tab.dataset.tab;
+      $$(".tab").forEach(t => t.setAttribute("aria-selected", String(t === tab)));
+      refresh();
+    };
+  });
+
+  $("#list").addEventListener("click", (e) => {
+    const b = e.target.closest("[data-book]");
+    if (b) return doBook(b.dataset.book, b);
+    const c = e.target.closest("[data-cancel]");
+    if (c) return doCancel(c.dataset.cancel, c);
+    const f = e.target.closest("[data-fav]");
+    if (f) return toggleFav(f.dataset.fav);
+  });
+
+  document.addEventListener("visibilitychange", () => {
+    if (!document.hidden && !$("#view-app").classList.contains("hide")) refresh();
+  });
+
+  if (token()) showApp(); else showAuth();
+
+  if ("serviceWorker" in navigator){
+    navigator.serviceWorker.register("sw.js").catch(() => {});
+  }
+}
+
+// exposé pour les tests hors-ligne / diagnostics
+window.__stadium = { state, API, CLUBS, sha256Hex, render, classCard };
+
+document.addEventListener("DOMContentLoaded", init);
+})();
+</script>
+</body>
+</html>

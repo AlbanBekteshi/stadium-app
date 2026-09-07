@@ -1,0 +1,31 @@
+name: Auto-réservation Stadium
+
+on:
+  schedule:
+    # Toutes les 15 minutes entre 05h et 22h (heure UTC ≈ heure belge - 2 en été).
+    - cron: "*/15 4-20 * * *"
+  workflow_dispatch:
+    inputs:
+      dry_run:
+        description: "Simulation (aucune réservation)"
+        type: boolean
+        default: true
+
+jobs:
+  book:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+
+      - name: Réserver les cours favoris
+        env:
+          STADIUM_USER: ${{ secrets.STADIUM_USER }}
+          STADIUM_PASSWORD: ${{ secrets.STADIUM_PASSWORD }}
+          STADIUM_CLUB: ${{ vars.STADIUM_CLUB || '1' }}
+          STADIUM_DAYS: "8"
+        run: |
+          node autobook/book.mjs ${{ inputs.dry_run && '--dry-run' || '' }}
