@@ -28,4 +28,8 @@ jobs:
           STADIUM_CLUB: ${{ vars.STADIUM_CLUB || '1' }}
           STADIUM_DAYS: "8"
         run: |
+          if [ -z "$STADIUM_USER" ] || [ -z "$STADIUM_PASSWORD" ]; then
+            echo "Secrets STADIUM_USER / STADIUM_PASSWORD absents - rien a faire."
+            exit 0
+          fi
           node autobook/book.mjs ${{ inputs.dry_run && '--dry-run' || '' }}

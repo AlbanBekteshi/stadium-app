@@ -96,8 +96,9 @@ STADIUM_USER=... STADIUM_PASSWORD=... node autobook/book.mjs
 
 ### Le planifier
 
-**Sur ton PC (recommandé)** — `autobook/run-windows.cmd` : y mettre tes identifiants, tester avec
-`run-windows.cmd --dry-run`, puis Planificateur de tâches Windows → tâche répétée toutes les 15 min.
+**Sur ton PC (recommandé)** — copier `autobook/run-windows.example.cmd` en `autobook/run-windows.cmd`
+(ce nom-là est dans `.gitignore`, tes identifiants ne partiront jamais dans git), y mettre tes identifiants,
+tester avec `run-windows.cmd --dry-run`, puis Planificateur de tâches Windows → tâche répétée toutes les 15 min.
 C'est l'option la plus fiable : l'API Stadium répond depuis une connexion belge normale.
 
 **GitHub Actions** — `.github/workflows/autobook.yml` est prêt (cron toutes les 15 min).
