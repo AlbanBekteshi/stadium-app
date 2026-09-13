@@ -68,6 +68,10 @@ En-tête d'authentification : `authorization: <token>` (jeton brut, sans `Bearer
 Détails utiles :
 
 - `Remaining` = places restantes, `MaxReservaties` = capacité, `ReservatieId` présent = déjà réservé.
+- Chaque cours porte les catégories officielles `Shape`, `FunMove`, `Sport`, `Power`, `Balance` et les options
+  `Dertig` (30 min), `LadiesOnly`, `Outdoor`. Ce sont elles qui alimentent le panneau de filtres, avec `Niveau`
+  (affiché en étoiles ☆ comme le planning officiel), `Zaal` (salle) et `leerkrachtnaam` (professeur).
+  Salle et professeur sont recalculés sur le jour affiché ; une sélection absente du nouveau jour est retirée.
 - Réponse de réservation `Type === 4` : Stadium demande une confirmation — l'app renvoie la même requête une fois
   (c'est ce que fait le site officiel).
 - L'API renvoie `Access-Control-Allow-Origin` ouvert, donc l'app fonctionne depuis n'importe quel domaine.

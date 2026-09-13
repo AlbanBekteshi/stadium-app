@@ -131,6 +131,36 @@
   .sk{height:76px;border-radius:var(--radius);background:linear-gradient(90deg,var(--surface) 25%,var(--surface-2) 37%,var(--surface) 63%);background-size:400% 100%;animation:sh 1.2s ease infinite}
   @keyframes sh{0%{background-position:100% 0}100%{background-position:0 0}}
 
+  /* ---------- panneau de filtres ---------- */
+  .fcount{
+    display:inline-grid;place-items:center;min-width:17px;height:17px;padding:0 4px;margin-left:6px;
+    border-radius:999px;background:var(--accent);color:var(--accent-ink);font-size:11px;font-weight:700
+  }
+  .chip[aria-pressed="true"] .fcount{background:var(--accent-ink);color:var(--accent)}
+  #sheet{position:fixed;inset:0;z-index:60;display:flex;align-items:flex-end}
+  #sheet .backdrop{position:absolute;inset:0;background:rgba(15,15,15,.55)}
+  .sheet-card{
+    position:relative;width:100%;max-width:640px;margin:0 auto;background:var(--surface);
+    border:1px solid var(--line);border-bottom:0;border-radius:18px 18px 0 0;
+    max-height:82vh;display:flex;flex-direction:column;box-shadow:var(--shadow)
+  }
+  .sheet-head{display:flex;align-items:center;gap:8px;padding:14px 16px 12px;border-bottom:1px solid var(--line)}
+  .sheet-head h2{font-size:16px;margin:0;letter-spacing:-.01em}
+  .sheet-body{flex:1;overflow-y:auto;padding:4px 16px 8px;-webkit-overflow-scrolling:touch}
+  .fs-sec{padding:13px 0;border-bottom:1px solid var(--line)}
+  .fs-sec:last-child{border-bottom:0}
+  .fs-sec h3{
+    font-size:11.5px;font-weight:700;color:var(--muted);text-transform:uppercase;
+    letter-spacing:.05em;margin:0 0 9px
+  }
+  .fs-chips{display:flex;flex-wrap:wrap;gap:8px}
+  .fs-chips .chip{flex:0 1 auto;max-width:100%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+  .sheet-foot{
+    display:flex;gap:8px;padding:12px 16px calc(env(safe-area-inset-bottom) + 12px);
+    border-top:1px solid var(--line)
+  }
+  .sheet-foot .btn{flex:1;padding:12px;font-size:14px;border-radius:12px}
+
   /* ---------- tabbar ---------- */
   nav.tabs{
     position:fixed;left:0;right:0;bottom:0;z-index:30;background:var(--surface);
@@ -228,6 +258,7 @@
       <div id="days" class="days"></div>
       <div id="filters" class="filters">
         <input id="q" class="search" type="search" placeholder="Rechercher un cours…" autocapitalize="none">
+        <button id="f-more" class="chip" aria-pressed="false">Filtres<span id="f-count" class="fcount hide"></span></button>
         <button id="f-fav" class="chip" aria-pressed="false">★ Favoris</button>
         <button id="f-free" class="chip" aria-pressed="false">Places dispo</button>
       </div>
@@ -251,6 +282,23 @@
     </nav>
   </div>
 </div>
+<div id="sheet" class="hide" role="dialog" aria-modal="true" aria-labelledby="sheet-title">
+  <div class="backdrop" data-close></div>
+  <div class="sheet-card">
+    <div class="sheet-head">
+      <h2 id="sheet-title">Filtres</h2>
+      <div class="spacer"></div>
+      <button class="iconbtn" data-close aria-label="Fermer">
+        <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M18 6 6 18M6 6l12 12"/></svg>
+      </button>
+    </div>
+    <div id="sheet-body" class="sheet-body"></div>
+    <div class="sheet-foot">
+      <button id="sheet-reset" class="btn">Réinitialiser</button>
+      <button id="sheet-apply" class="btn primary">Voir les cours</button>
+    </div>
+  </div>
+</div>
 <div id="toast"></div>
 
 <script>
@@ -267,6 +315,17 @@ const CLUBS = [
   { id: 6, name: "Stadium Caméléon", api: "https://webapi.stadium.be/api/6" },
 ];
 const DAYS_AHEAD = 14;
+
+/* Taxonomies de l'API Stadium. Les niveaux sont la liste officielle du planning
+   (rendue en étoiles comme sur le site) ; les catégories et options sont des
+   booléens portés par chaque cours. */
+const LEVELS = ["*", "*/**", "**", "**/***", "***", "*/**/***"];
+const CATEGORIES = ["Shape", "FunMove", "Sport", "Power", "Balance"];
+const OPTIONS = [
+  { key: "Dertig", label: "30 min" },
+  { key: "LadiesOnly", label: "Ladies only" },
+  { key: "Outdoor", label: "Outdoor" },
+];
 const LS = {
   club:  "stadium.club",
   theme: "stadium.theme",
@@ -285,7 +344,12 @@ const state = {
   classes: [],
   mine: [],
   loading: false,
-  filters: { q: "", fav: false, free: false },
+  // Les ensembles ne sont volontairement pas persistés : on rouvre l'app sur
+  // l'horaire complet plutôt que sur un filtre oublié.
+  filters: {
+    q: "", fav: false, free: false,
+    levels: new Set(), cats: new Set(), rooms: new Set(), teachers: new Set(), opts: new Set(),
+  },
   favorites: new Set(JSON.parse(localStorage.getItem(LS.fav) || "[]")),
 };
 
@@ -307,6 +371,8 @@ function parseApiDate(s){
   const m = /^(\d{2})\/(\d{2})\/(\d{4})$/.exec(String(s || ""));
   return m ? new Date(+m[3], +m[2] - 1, +m[1]) : null;
 }
+// Niveau brut de l'API (une à trois étoiles, parfois combinées) rendu comme sur le planning officiel.
+function stars(niveau){ return String(niveau ?? "").replace(/\*/g, "☆"); }
 function escapeHtml(s){
   return String(s ?? "").replace(/[&<>"']/g, c => ({ "&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;" }[c]));
 }
@@ -437,7 +503,7 @@ function classCard(c, { showDate = false } = {}){
   else if (full) badges.push(`<span class="badge full">Complet</span>`);
   else if (remaining > 0 && remaining <= 3) badges.push(`<span class="badge warn">${remaining} place${remaining > 1 ? "s" : ""}</span>`);
   else if (remaining > 0) badges.push(`<span class="badge">${remaining} places</span>`);
-  if (c.Niveau) badges.push(`<span class="badge">${escapeHtml(c.Niveau)}</span>`);
+  if (c.Niveau) badges.push(`<span class="badge" title="Niveau">${escapeHtml(stars(c.Niveau))}</span>`);
   for (const t of categoryOf(c)) badges.push(`<span class="badge">${escapeHtml(t)}</span>`);
 
   let action;
@@ -467,15 +533,94 @@ function classCard(c, { showDate = false } = {}){
   return el;
 }
 
+/* OU à l'intérieur d'une section, ET entre les sections. */
 function filtered(list){
-  const q = state.filters.q.trim().toLowerCase();
+  const f = state.filters;
+  const q = f.q.trim().toLowerCase();
   return list.filter(c => {
     const name = (c.LesNaam || "").toLowerCase();
     if (q && !(name.includes(q) || (c.leerkrachtnaam || "").toLowerCase().includes(q))) return false;
-    if (state.filters.fav && !state.favorites.has(name)) return false;
-    if (state.filters.free && !(c.Remaining === -1 || c.Remaining > 0 || c.ReservatieId)) return false;
+    if (f.fav && !state.favorites.has(name)) return false;
+    // Remaining absent = capacité inconnue : on montre le cours plutôt que de le cacher.
+    if (f.free && !(c.ReservatieId || !Number.isFinite(c.Remaining) || c.Remaining > 0)) return false;
+    if (f.levels.size && !f.levels.has(String(c.Niveau || ""))) return false;
+    if (f.cats.size && ![...f.cats].some(k => c[k])) return false;
+    if (f.rooms.size && !f.rooms.has(String(c.Zaal || ""))) return false;
+    if (f.teachers.size && !f.teachers.has(String(c.leerkrachtnaam || ""))) return false;
+    if (f.opts.size && ![...f.opts].some(k => c[k])) return false;
     return true;
   });
+}
+
+function activeFilterCount(){
+  const f = state.filters;
+  return f.levels.size + f.cats.size + f.rooms.size + f.teachers.size + f.opts.size;
+}
+
+/* Salle et professeur sont des facettes propres au jour affiché : une sélection
+   qui n'existe plus après un changement de jour ne ferait que vider la liste. */
+function pruneFilters(){
+  const f = state.filters;
+  const keep = (set, values) => { for (const v of [...set]) if (!values.has(v)) set.delete(v); };
+  keep(f.rooms, new Set(state.classes.map(c => String(c.Zaal || ""))));
+  keep(f.teachers, new Set(state.classes.map(c => String(c.leerkrachtnaam || ""))));
+}
+
+/* ---------- panneau de filtres ---------- */
+function fsChip(group, value, label, on){
+  return `<button class="chip" data-group="${group}" data-value="${escapeHtml(value)}" aria-pressed="${on}">${escapeHtml(label)}</button>`;
+}
+
+function renderFilterSheet(){
+  const f = state.filters;
+  const present = (get) => [...new Set(state.classes.map(get).filter(Boolean))]
+    .sort((a, b) => String(a).localeCompare(String(b), "fr"));
+
+  const levels   = LEVELS.filter(l => state.classes.some(c => String(c.Niveau || "") === l));
+  const cats     = CATEGORIES.filter(k => state.classes.some(c => c[k]));
+  const opts     = OPTIONS.filter(o => state.classes.some(c => c[o.key]));
+  const rooms    = present(c => c.Zaal);
+  const teachers = present(c => c.leerkrachtnaam);
+
+  const section = (title, chips) => chips.length
+    ? `<section class="fs-sec"><h3>${title}</h3><div class="fs-chips">${chips.join("")}</div></section>` : "";
+
+  const html =
+    section("Niveau",     levels.map(l => fsChip("levels", l, stars(l), f.levels.has(l)))) +
+    section("Catégorie",  cats.map(k => fsChip("cats", k, k, f.cats.has(k)))) +
+    section("Salle",      rooms.map(r => fsChip("rooms", r, r, f.rooms.has(r)))) +
+    section("Professeur", teachers.map(t => fsChip("teachers", t, t, f.teachers.has(t)))) +
+    section("Options",    opts.map(o => fsChip("opts", o.key, o.label, f.opts.has(o.key))));
+
+  $("#sheet-body").innerHTML = html || `<div class="empty">Aucun cours à filtrer ce jour-là.</div>`;
+  updateSheetCount();
+}
+
+function updateSheetCount(){
+  const n = filtered(state.classes).length;
+  $("#sheet-apply").textContent = `Voir ${n} cours`;
+}
+
+function updateFilterBadge(){
+  const n = activeFilterCount();
+  $("#f-more").setAttribute("aria-pressed", String(n > 0));
+  const el = $("#f-count");
+  el.textContent = n ? String(n) : "";
+  el.classList.toggle("hide", !n);
+}
+
+function openFilters(){
+  renderFilterSheet();
+  $("#sheet").classList.remove("hide");
+}
+function closeFilters(){ $("#sheet").classList.add("hide"); }
+
+function resetFilters(){
+  const f = state.filters;
+  for (const k of ["levels", "cats", "rooms", "teachers", "opts"]) f[k].clear();
+  renderFilterSheet();
+  updateFilterBadge();
+  render();
 }
 
 function render(){
@@ -523,6 +668,8 @@ async function loadSchedule(){
   const data = await guarded(() => API.schedule(state.date));
   state.loading = false;
   state.classes = Array.isArray(data) ? data : [];
+  pruneFilters();
+  updateFilterBadge();
   render();
 }
 
@@ -712,10 +859,31 @@ function init(){
     render();
   };
 
+  $("#f-more").onclick = openFilters;
+  $("#sheet-apply").onclick = closeFilters;
+  $("#sheet-reset").onclick = resetFilters;
+  $$("#sheet [data-close]").forEach(el => { el.onclick = closeFilters; });
+  document.addEventListener("keydown", (e) => {
+    if (e.key === "Escape" && !$("#sheet").classList.contains("hide")) closeFilters();
+  });
+
+  $("#sheet-body").addEventListener("click", (e) => {
+    const b = e.target.closest("[data-group]");
+    if (!b) return;
+    const set = state.filters[b.dataset.group];
+    const v = b.dataset.value;
+    set.has(v) ? set.delete(v) : set.add(v);
+    b.setAttribute("aria-pressed", String(set.has(v)));
+    updateSheetCount();
+    updateFilterBadge();
+    render();
+  });
+
   $$(".tab").forEach(tab => {
     tab.onclick = () => {
       state.tab = tab.dataset.tab;
       $$(".tab").forEach(t => t.setAttribute("aria-selected", String(t === tab)));
+      closeFilters();
       refresh();
     };
   });
@@ -741,7 +909,7 @@ function init(){
 }
 
 // exposé pour les tests hors-ligne / diagnostics
-window.__stadium = { state, API, CLUBS, sha256Hex, render, classCard };
+window.__stadium = { state, API, CLUBS, sha256Hex, render, classCard, openFilters, filtered };
 
 document.addEventListener("DOMContentLoaded", init);
 })();
