@@ -3,38 +3,48 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<meta name="theme-color" content="#0f1115">
+<meta name="theme-color" content="#ffffff" media="(prefers-color-scheme: light)">
+<meta name="theme-color" content="#232120" media="(prefers-color-scheme: dark)">
 <title>Stadium — Cours collectifs</title>
 <link rel="manifest" href="manifest.webmanifest">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Titillium+Web:wght@400;600;700;900&display=swap">
 <link rel="apple-touch-icon" href="icons/icon-192.png">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <style>
+  /* Palette officielle Stadium (relevee sur stadium.be) :
+     accent #8244E7, encre #232120, fonds #FFF/#F5F5F5/#EEE/#0F0F0F,
+     semantiques Material #4CAF50 / #FF9800 / #F44336.
+     En theme clair les semantiques passent sur la nuance foncee de la meme
+     famille : elles servent de couleur de TEXTE sur pastille teintee, et les
+     500 ne sont pas lisibles sur fond blanc. */
   :root{
-    --bg:#f6f7f9; --surface:#ffffff; --surface-2:#eef0f4; --text:#12151a; --muted:#646c7a;
-    --line:#e2e5ea; --accent:#e2001a; --accent-ink:#ffffff; --ok:#12805c; --warn:#a35b00; --danger:#c8102e;
-    --radius:14px; --shadow:0 1px 2px rgba(16,20,28,.06),0 6px 20px rgba(16,20,28,.06);
+    --bg:#f5f5f5; --surface:#ffffff; --surface-2:#eeeeee; --text:#232120; --muted:#666666;
+    --line:#e0e0e0; --accent:#8244e7; --accent-ink:#ffffff; --ok:#2e7d32; --warn:#e65100; --danger:#c62828;
+    --radius:14px; --shadow:0 1px 2px rgba(35,33,32,.06),0 6px 20px rgba(35,33,32,.08);
+    color-scheme: light;
   }
-  :root[data-theme="dark"], :root:not([data-theme="light"]) {
-    color-scheme: light dark;
-  }
+  :root:not([data-theme="light"]){ color-scheme: light dark; }
   @media (prefers-color-scheme: dark){
     :root:not([data-theme="light"]){
-      --bg:#0f1115; --surface:#171a21; --surface-2:#1f232c; --text:#eef1f6; --muted:#98a1b0;
-      --line:#272c36; --accent:#ff2d42; --accent-ink:#ffffff; --ok:#3ddc9a; --warn:#ffb454; --danger:#ff5a6e;
+      --bg:#0f0f0f; --surface:#232120; --surface-2:#2e2b2a; --text:#f5f5f5; --muted:#999999;
+      --line:#3a3736; --accent:#9463ef; --accent-ink:#ffffff; --ok:#4caf50; --warn:#ff9800; --danger:#f44336;
       --shadow:0 1px 2px rgba(0,0,0,.4),0 8px 24px rgba(0,0,0,.35);
     }
   }
   :root[data-theme="dark"]{
-    --bg:#0f1115; --surface:#171a21; --surface-2:#1f232c; --text:#eef1f6; --muted:#98a1b0;
-    --line:#272c36; --accent:#ff2d42; --accent-ink:#ffffff; --ok:#3ddc9a; --warn:#ffb454; --danger:#ff5a6e;
+    --bg:#0f0f0f; --surface:#232120; --surface-2:#2e2b2a; --text:#f5f5f5; --muted:#999999;
+    --line:#3a3736; --accent:#9463ef; --accent-ink:#ffffff; --ok:#4caf50; --warn:#ff9800; --danger:#f44336;
     --shadow:0 1px 2px rgba(0,0,0,.4),0 8px 24px rgba(0,0,0,.35);
+    color-scheme: dark;
   }
   *{box-sizing:border-box}
   html,body{margin:0;padding:0}
   body{
     background:var(--bg); color:var(--text);
-    font:16px/1.45 -apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;
+    font:16px/1.45 "Titillium Web",-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;
     -webkit-font-smoothing:antialiased; overscroll-behavior-y:contain;
   }
   button,input,select{font:inherit;color:inherit}
@@ -48,7 +58,7 @@
     padding:calc(env(safe-area-inset-top) + 10px) 12px 0;
   }
   .bar{display:flex;align-items:center;gap:8px;padding-bottom:10px}
-  .brand{display:flex;align-items:center;gap:8px;font-weight:800;letter-spacing:-.02em;font-size:17px}
+  .brand{display:flex;align-items:center;gap:8px;font-weight:700;letter-spacing:-.02em;font-size:17px}
   .dot{width:10px;height:10px;border-radius:50%;background:var(--accent)}
   .spacer{flex:1}
   .iconbtn{
@@ -152,12 +162,12 @@
   #toast{
     position:fixed;left:50%;transform:translateX(-50%) translateY(20px);
     bottom:calc(env(safe-area-inset-bottom) + 78px);z-index:50;max-width:min(560px,92vw);
-    background:#12151a;color:#fff;border-radius:12px;padding:12px 14px;font-size:13.5px;
+    background:#232120;color:#fff;border-radius:12px;padding:12px 14px;font-size:13.5px;
     box-shadow:0 10px 30px rgba(0,0,0,.35);opacity:0;pointer-events:none;transition:.22s
   }
   #toast.show{opacity:1;transform:translateX(-50%) translateY(0)}
   #toast.err{background:var(--danger)}
-  #toast.ok{background:#0e6f4f}
+  #toast.ok{background:#2e7d32}
   .hide{display:none !important}
 </style>
 </head>
@@ -335,7 +345,12 @@ async function api(path, { method = "GET", json, form } = {}){
   } catch (e) {
     throw new Error("Pas de connexion au serveur Stadium.");
   }
-  if (res.status === 401 || res.status === 403) throw new AuthError("Session expirée.");
+  if (res.status === 401 || res.status === 403){
+    // Sans jeton envoyé, ce n'est pas une session expirée mais un refus de connexion :
+    // afficher "Session expirée." sur l'écran de login n'a aucun sens.
+    if (!t) throw new Error(`Connexion refusée par Stadium (${res.status}).`);
+    throw new AuthError("Session expirée.");
+  }
   const text = await res.text();
   if (!res.ok) throw new Error(`Erreur serveur (${res.status}).`);
   try { return text ? JSON.parse(text) : null; }
